@@ -17,7 +17,10 @@ import (
 
 func serve(addr string) {
 	log.Println("start http server(" + addr + ")")
+
+	http.HandleFunc("/form", formHandler)
 	http.HandleFunc("/", handler)
+
 	log.Fatal(http.ListenAndServe(addr, nil))
 }
 
@@ -67,6 +70,12 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		lgtm.Y = max.Y - (textSize.Y / 2)
 	}
 
+	fontSize := q.Get("fontSize")
+	if fontSize != "" {
+		fs, _ := strconv.ParseInt(fontSize, 64, 10)
+		lgtm.Text.FontSize = float64(fs)
+	}
+
 	lgtm.Text.SetFontColor(q.Get("color"))
 
 	result, err := lgtm.Convert(img)
@@ -89,6 +98,68 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	b.WriteTo(w)
 }
 
+func formHandler(w http.ResponseWriter, r *http.Request) {
+	html := `<!DOCTYPE html>
+	<html>
+	<head>
+		<meta charset="UTF-8" />
+		<title>go lgtm</title>
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap-theme.min.css">
+		<style>
+		.main {
+			margin-top: 120px;
+		}
+		</style>
+	</head>
+	<body>
+		<nav class="navbar navbar-inverse navbar-fixed-top">
+			<div class="container">
+				<div class="navbar-header">
+					<a class="navbar-brand" href="#">Go LGTM</a>
+				</div>
+			</div>
+		</nav>
+		<div class="container">
+			<div class="main">
+				<div class="row"> 
+					<div class="col-md-10">
+						<img src="/?src=" id="image" height="500">
+					</div>
+					<div class="col-md-2">
+						<form action="GET">
+							<div class="form-group">
+								<label for="src">src</label>
+								<input type="text" id="src" name="src" placeholder="http://...">
+							</div>
+							<div class="form-group">
+								<label for="fontSize">font size</label>
+								<input type="text" id="fontSize" name="fontSize" placeholder="94">
+							</div>
+							<div class="form-group">
+								<label for="color">color</label>
+								<input type="color" id="color" value="#ffffff" name="color">
+							</div>
+							<div class="form-group">
+								<label for="x">x</label>
+								<input type="text" id="x" name="x" placeholder="100">
+							</div>
+							<div class="form-group">
+								<label for="y">y</label>
+								<input type="text" id="y" name="y" placeholder="100">
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+	</body>
+	</html>`
+	w.Header().Set("Content-Type", "text/html")
+	w.Write([]byte(html))
+}
+
 func badRequestHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusBadRequest)
@@ -102,9 +173,6 @@ func fetchURL(src string) ([]byte, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-
-	// sizeが2M以上なら対象外
-	// imageでなければerr
 
 	return ioutil.ReadAll(resp.Body)
 }

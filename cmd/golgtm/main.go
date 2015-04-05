@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	flag.StringVar(&addr, "http", ":6060", "HTTP service address (e.g., ':6060'")
+	flag.StringVar(&addr, "http", ":8000", "HTTP service address (e.g., ':8000'")
 
 	flag.StringVar(&src, "src", "", "source file")
 	flag.StringVar(&dst, "dst", "", "dest file")
